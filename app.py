@@ -3,7 +3,7 @@ import pandas as pd
 import joblib
 import numpy as np
 
-# Muat model dan scaler yang telah disimpan
+# Muat model dan scaler
 try:
     model = joblib.load('random_forest_obesity_model.pkl')
     scaler = joblib.load('scaler.pkl')
@@ -13,17 +13,16 @@ except FileNotFoundError:
 
 # Judul dan deskripsi aplikasi
 st.title("Aplikasi Prediksi Tingkat Obesitas")
-st.write("Masukkan data di bawah ini untuk memprediksi tingkat obesitas Anda.")
+st.markdown("Muhammad Satriya Pratama Manggala Kusuma-(A11.2022.14225)")
+st.subheader("Masukkan data di bawah ini untuk memprediksi tingkat obesitas Anda.")
 
-# Membuat antarmuka untuk input pengguna
-# Menggunakan kolom untuk tata letak yang lebih baik
 col1, col2 = st.columns(2)
 
 with col1:
     st.header("Atribut Fisik")
-    age = st.slider("Usia (Tahun)", 14, 65, 25)
+    age = st.slider("Usia (Tahun)", 10, 70, 25)
     height = st.slider("Tinggi Badan (Meter)", 1.40, 2.00, 1.75, 0.01)
-    weight = st.slider("Berat Badan (Kg)", 40.0, 180.0, 70.0, 0.5)
+    weight = st.slider("Berat Badan (Kg)", 30.0, 200.0, 70.0, 0.5)
     gender = st.selectbox("Jenis Kelamin", ['Pria', 'Wanita'])
     family_history = st.selectbox("Riwayat obesitas dalam keluarga?", ['Ya', 'Tidak'])
 
@@ -48,13 +47,7 @@ with col3:
     calc = st.selectbox("Konsumsi alkohol (CALC)?", ['Tidak', 'Kadang-kadang', 'Sering', 'Selalu'])
     mtrans = st.selectbox("Transportasi yang digunakan (MTRANS)", ['Mobil', 'Motor', 'Sepeda', 'Transportasi Umum', 'Jalan Kaki'])
 
-# Tombol untuk melakukan prediksi
 if st.button("Prediksi Tingkat Obesitas", type="primary"):
-    
-    # --- PERBAIKAN PADA PREPROCESSING INPUT PENGGUNA ---
-    
-    # 1. Kumpulkan semua input ke dalam satu dictionary
-    # Nama kolom harus sama dengan nama kolom di data asli sebelum di-encode
     input_data = {
         'Age': age, 'Height': height, 'Weight': weight, 'FCVC': fcvc, 'NCP': ncp,
         'CH2O': ch2o, 'FAF': faf, 'TUE': tue,
@@ -69,18 +62,12 @@ if st.button("Prediksi Tingkat Obesitas", type="primary"):
     }
 
     input_df_raw = pd.DataFrame([input_data])
-
-    # 2. Scaling fitur numerik (dilakukan sebelum one-hot encoding)
     numerical_cols = ['Age', 'Height', 'Weight', 'FCVC', 'NCP', 'CH2O', 'FAF', 'TUE']
     input_df_raw[numerical_cols] = scaler.transform(input_df_raw[numerical_cols])
-    
-    # 3. One-Hot Encoding
-    # Kolom kategorikal yang akan di-encode
+
     categorical_cols = ['Gender', 'family_history_with_overweight', 'FAVC', 'CAEC', 'SMOKE', 'SCC', 'CALC', 'MTRANS']
     input_df_encoded = pd.get_dummies(input_df_raw, columns=categorical_cols)
 
-    # 4. Memastikan semua kolom dari data training ada
-    # Ini adalah langkah kunci untuk mengatasi ValueError
     training_columns = [
         'Age', 'Height', 'Weight', 'FCVC', 'NCP', 'CH2O', 'FAF', 'TUE',
         'Gender_Female', 'Gender_Male',
@@ -93,18 +80,14 @@ if st.button("Prediksi Tingkat Obesitas", type="primary"):
         'MTRANS_Automobile', 'MTRANS_Bike', 'MTRANS_Motorbike',
         'MTRANS_Public_Transportation', 'MTRANS_Walking'
     ]
-    
-    # Reindex dataframe input agar kolomnya sama persis dengan saat training
+
     input_final = input_df_encoded.reindex(columns=training_columns, fill_value=0)
 
-    # Lakukan prediksi
     prediction = model.predict(input_final)
     prediction_proba = model.predict_proba(input_final)
-    
-    # Menampilkan hasil
+
     st.subheader("Hasil Prediksi")
-    
-    # Mengganti underscore dengan spasi untuk tampilan yang lebih baik
+
     result = prediction[0].replace("_", " ")
     
     st.success(f"Anda diprediksi memiliki tingkat: **{result}**")
